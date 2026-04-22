@@ -22,7 +22,7 @@ func (s *TaskService) CreateTask(ctx context.Context, description string) (model
 		CreatedAt:   time.Now(),
 	}
 
-	return s.repo.CreateTaskWithEvent(ctx, task)
+	return s.repo.CreateTask(ctx, task)
 }
 
 func (s *TaskService) GetTasks(ctx context.Context) ([]models.Task, error) {
