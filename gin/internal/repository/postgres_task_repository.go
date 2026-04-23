@@ -256,3 +256,45 @@ func (r *PostgresTaskRepo) DeleteTask(ctx context.Context, id models.ID) error {
 
 	return nil
 }
+
+func (r *PostgresTaskRepo) GetUnprocessedEvents(ctx context.Context) ([]outbox.Event, error) {
+	var events []outbox.Event
+
+	query := `
+	SELECT (id, event_type, payload, created_at, processed) 
+	FROM outbox 
+	WHERE processed = false`
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var event outbox.Event
+
+		err := rows.Scan(
+			&event.ID,
+			&event.EventType,
+			&event.Payload,
+			&event.Processed,
+			&event.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}
+func (r *PostgresTaskRepo) MarkEventProcessed(ctx context.Context, id string) error {
+	query := `
+	UPDATE outbox
+	SET processed = true
+	WHERE id = $1`
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
+}
