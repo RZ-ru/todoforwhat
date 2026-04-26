@@ -1,0 +1,4 @@
+ALTER TABLE outbox
+ADD COLUMN attempts INT NOT NULL DEFAULT 0,
+ADD COLUMN last_error TEXT,
+ADD COLUMN next_retry_at TIMESTAMP;
