@@ -15,4 +15,5 @@ type TaskRepository interface {
 
 	GetUnprocessedEvents(ctx context.Context) ([]outbox.Event, error)
 	MarkEventProcessed(ctx context.Context, id string) error
+	MarkEventFailed(ctx context.Context, id string, errorMsg string) error
 }
