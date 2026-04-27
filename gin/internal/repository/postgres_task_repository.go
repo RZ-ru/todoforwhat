@@ -261,13 +261,16 @@ func (r *PostgresTaskRepo) GetUnprocessedEvents(ctx context.Context) ([]outbox.E
 	var events []outbox.Event
 
 	query := `
-	SELECT (id, event_type, payload, created_at, processed) 
+	SELECT id, event_type, payload, created_at, processed, attempts, last_error, next_retry_at
 	FROM outbox 
-	WHERE processed = false`
+	WHERE processed = false
+	AND attempts < 5
+	AND (next_retry_at IS NULL OR next_retry_at <= NOW())`
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var event outbox.Event
 
@@ -275,8 +278,11 @@ func (r *PostgresTaskRepo) GetUnprocessedEvents(ctx context.Context) ([]outbox.E
 			&event.ID,
 			&event.EventType,
 			&event.Payload,
-			&event.Processed,
 			&event.CreatedAt,
+			&event.Processed,
+			&event.Attempts,
+			&event.LastError,
+			&event.NextRetryAt,
 		)
 		if err != nil {
 			return nil, err
@@ -296,5 +302,17 @@ func (r *PostgresTaskRepo) MarkEventProcessed(ctx context.Context, id string) er
 	SET processed = true
 	WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, query, id)
+	return err
+}
+func (r *PostgresTaskRepo) MarkEventFailed(ctx context.Context, id string, errorMsg string) error {
+	query := `
+	UPDATE outbox 
+	SET
+		attemps = attemps + 1,
+		last_error = $2,
+		next_retry_at = NOW() + INTERVAL '10 seconds'
+	WHERE id = $1`
+
+	_, err := r.db.ExecContext(ctx, query, id, errorMsg)
 	return err
 }
