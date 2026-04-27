@@ -22,8 +22,11 @@ type Worker struct {
 	publisher Publisher
 }
 
-func NewWorker(repo Repository) *Worker {
-	return &Worker{repo: repo}
+func NewWorker(repo Repository, publisher Publisher) *Worker {
+	return &Worker{
+		repo:      repo,
+		publisher: publisher,
+	}
 }
 
 func (w *Worker) Start(ctx context.Context) {
