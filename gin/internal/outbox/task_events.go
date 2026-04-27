@@ -1,13 +1,19 @@
 package outbox
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type Event struct {
-	ID        string
-	EventType string
-	Payload   []byte
-	CreatedAt time.Time
-	Processed bool
+	ID          string
+	EventType   string
+	Payload     []byte
+	CreatedAt   time.Time
+	Processed   bool
+	Attempts    int
+	LastError   sql.NullString
+	NextRetryAt sql.NullTime
 }
 
 type TaskCreatedPayload struct {
