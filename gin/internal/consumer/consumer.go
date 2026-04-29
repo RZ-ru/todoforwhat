@@ -20,7 +20,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 	msgs, err := c.ch.Consume(
 		"tasks", // очередь
 		"",      // consumer name
-		true,    // auto-ack (пока так)
+		false,   // auto-ack (пока так)
 		false,
 		false,
 		false,
@@ -37,6 +37,25 @@ func (c *Consumer) Start(ctx context.Context) error {
 
 		case msg := <-msgs:
 			log.Printf("received: %s\n", string(msg.Body))
+
+			// имитация обработки
+			err := process(msg.Body)
+
+			if err != nil {
+				log.Println("process error:", err)
+
+				// вернуть сообщение обратно в очередь
+				msg.Nack(false, true)
+				continue
+			}
+
+			// подтвердить обработку
+			msg.Ack(false)
 		}
 	}
+}
+
+func process(body []byte) error {
+	log.Println("processing:", string(body))
+	return nil
 }
